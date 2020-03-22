@@ -5,12 +5,13 @@ const { google } = require('googleapis');
 
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
-const REDIRECT_URI = process.env.REDIRECT_URI;
+const PHONE_NUMBER_REDIRECT_URI = process.env.PHONE_NUMBER_REDIRECT_URI;
+const CALENDAR_REDIRECT_URI = process.env.CALENDAR_REDIRECT_URI;
 
 const oauth2Client = new google.auth.OAuth2(
     CLIENT_ID,
     CLIENT_SECRET,
-    REDIRECT_URI
+    PHONE_NUMBER_REDIRECT_URI
 );
 
 // generate a url that asks permissions for Blogger and Google Calendar scopes
