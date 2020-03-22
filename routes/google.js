@@ -3,10 +3,14 @@ const router = express.Router();
 
 const { google } = require('googleapis');
 
+const CLIENT_ID = process.env.CLIENT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const REDIRECT_URI = process.env.REDIRECT_URI;
+
 const oauth2Client = new google.auth.OAuth2(
-    "",
-    "",
-    "https://13db125b.ngrok.io/calendar"
+    CLIENT_ID,
+    CLIENT_SECRET,
+    REDIRECT_URI
 );
 
 // generate a url that asks permissions for Blogger and Google Calendar scopes
@@ -31,10 +35,25 @@ async function generateAuthUrl() {
 
 async function retrieveAccessToken(authCode) {
     try {
-        const {tokens} = await oauth2Client.getToken(authCode)
-        console.log(tokens)
+        const {tokens} = await oauth2Client.getToken(authCode);
         oauth2Client.setCredentials(tokens);
+        return tokens;
     } catch(e) {
+        throw new Error(e.message);
+    }
+}
+
+async function getCalendars(authToken) {
+    try {
+        oauth2Client.setCredentials(authToken);
+        const calendar = google.calendar({
+            version: 'v3',
+            auth: oauth2Client
+        });
+        const {data: {items}} = await calendar.calendarList.list();
+        return items;
+    } catch(e) {
+        console.error(e);
         throw new Error(e.message);
     }
 }
@@ -49,12 +68,24 @@ router.get('/', async function (req, res, next) {
     }
 });
 
+router.get("/calendars", async function(req, res, next) {
+    const tokens = JSON.parse(req.headers.authorization);
+    try {
+        const calendars = await getCalendars(tokens);
+        res.json(calendars).status(200);
+    } catch(e) {
+        console.error(e);
+        res.end().status(400);
+    }
+})
+
 router.post("/access-token", async function(req, res, next) {
     try {
         const {authCode} = req.body;
-        await retrieveAccessToken(authCode);
-        res.end().status(200);
+        const auth = await retrieveAccessToken(authCode);
+        res.json(auth).status(200);
     } catch(e) {
+        console.error(e);
         res.end().status(400)
     }
 })
